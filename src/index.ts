@@ -230,7 +230,7 @@ export default function ompOttyBridge(
       }
 
       const snapshot = activeRuntime.state.snapshot(
-        isContextIdle(ctx),
+        bridgeEvent?.type === "session_shutdown" ? true : isContextIdle(ctx),
         activeRuntime.settings,
       );
       const title = composeTitle(

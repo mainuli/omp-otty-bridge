@@ -139,6 +139,23 @@ describe("ompOttyBridge", () => {
     expect(titles).toEqual(["▶ pi: project · bash"]);
   });
 
+  test("restores base title on shutdown even when context is not idle", async () => {
+    const fake = makePi();
+    const titles: string[] = [];
+    extension(fake.pi as never, { env: { TERM_PROGRAM: "otty" }, settings: {} });
+    const ctx = makeCtx({ ui: { setTitle: (title) => titles.push(title) } });
+
+    await emit(
+      fake.handlers,
+      "tool_execution_start",
+      { type: "tool_execution_start", toolCallId: "1", toolName: "bash" },
+      ctx,
+    );
+    await emit(fake.handlers, "session_shutdown", { type: "session_shutdown" }, ctx);
+
+    expect(titles).toEqual(["▶ pi: project · bash", "pi: project"]);
+  });
+
   test("loads project settings through settingsReader and applies titleFormat label-only", async () => {
     const fake = makePi();
     const titles: string[] = [];
