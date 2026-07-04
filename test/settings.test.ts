@@ -107,8 +107,9 @@ describe("loadBridgeSettings", () => {
       throw new Error("settings unavailable");
     };
 
-    await expect(loadBridgeSettings("/tmp/project", undefined, reader)).resolves.toEqual(
-      DEFAULT_SETTINGS,
-    );
+    const settings = await loadBridgeSettings("/tmp/project", undefined, reader);
+
+    expect(settings).toEqual(DEFAULT_SETTINGS);
+    expect(settings).not.toBe(DEFAULT_SETTINGS);
   });
 });

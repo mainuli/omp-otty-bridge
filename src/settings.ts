@@ -86,6 +86,6 @@ export async function loadBridgeSettings(
   try {
     return normalizeSettings(await reader(PLUGIN_NAME, cwd));
   } catch {
-    return DEFAULT_SETTINGS;
+    return normalizeSettings();
   }
 }
