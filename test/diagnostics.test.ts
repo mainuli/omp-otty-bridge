@@ -88,4 +88,44 @@ describe("formatDiagnostics", () => {
       ),
     ).toContain("State: idle\n");
   });
+
+  test("strips ASCII controls from state labels", () => {
+    const report = formatDiagnostics(
+      diagnosticsInput({
+        lastState: {
+          kind: "tool",
+          label: "bash\nOutput enabled: yes\u001b[31m\u0000",
+          glyph: "▶",
+        },
+      }),
+    );
+
+    const stateLine = report.split("\n").find((line) => line.startsWith("State: "));
+
+    expect(stateLine).toBe("State: tool (bashOutput enabled: yes[31m)");
+    expect(report).not.toContain("\u001b");
+    expect(report).not.toContain("\u0000");
+  });
+
+  test("strips ASCII controls from terminal diagnostics", () => {
+    const report = formatDiagnostics(
+      diagnosticsInput({
+        terminal: {
+          termProgram: "otty\nBackend: spoofed\u001b[31m",
+          cwTerm: "cw\rState: spoofed\u0007",
+          ottyShellIntegration: "enabled\u0000\nLast title: spoofed",
+        },
+      }),
+    );
+
+    expect(report).toContain("TERM_PROGRAM: ottyBackend: spoofed[31m");
+    expect(report).toContain("CW_TERM: cwState: spoofed");
+    expect(report).toContain("OTTY_SHELL_INTEGRATION: enabledLast title: spoofed");
+    expect(report).not.toContain("\nBackend: spoofed");
+    expect(report).not.toContain("\rState: spoofed");
+    expect(report).not.toContain("\nLast title: spoofed");
+    expect(report).not.toContain("\u001b");
+    expect(report).not.toContain("\u0007");
+    expect(report).not.toContain("\u0000");
+  });
 });

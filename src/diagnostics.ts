@@ -3,6 +3,8 @@ import type { DisplayState } from "./state";
 import type { TerminalDiagnostics } from "./terminal";
 import { sanitizeTitle } from "./title";
 
+const ASCII_CONTROLS = /[\x00-\x1f\x7f]/g;
+
 export interface DiagnosticsInput {
   detectedOtty: boolean;
   outputEnabled: boolean;
@@ -14,7 +16,8 @@ export interface DiagnosticsInput {
 }
 
 export function formatDiagnostics(input: DiagnosticsInput): string {
-  const stateLabel = input.lastState.label === "" ? "" : ` (${input.lastState.label})`;
+  const sanitizedStateLabel = sanitizeReportField(input.lastState.label);
+  const stateLabel = sanitizedStateLabel === "" ? "" : ` (${sanitizedStateLabel})`;
 
   return [
     "OMP Otty Bridge",
@@ -35,5 +38,9 @@ function formatBoolean(value: boolean): "yes" | "no" {
 }
 
 function formatTerminalValue(value: string | undefined): string {
-  return value ?? "(unset)";
+  return value === undefined ? "(unset)" : sanitizeReportField(value);
+}
+
+function sanitizeReportField(value: string): string {
+  return value.replace(ASCII_CONTROLS, "");
 }
