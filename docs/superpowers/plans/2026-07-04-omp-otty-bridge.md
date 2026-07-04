@@ -783,7 +783,7 @@ Expected: FAIL with module not found for `../src/title`.
 import type { BridgeSettings } from "./settings";
 import type { DisplayState } from "./state";
 
-const CONTROL_RE = /[\x00-\x1f\x7f]/g;
+const CONTROL_RE = /[\x00-\x1f\x7f-\x9f]/g;
 
 export function sanitizeTitle(title: string, maxLength: number): string {
   return title.replace(CONTROL_RE, "").slice(0, maxLength);
@@ -1108,7 +1108,7 @@ export interface TitleBackend {
   setTitle(title: string): void;
 }
 
-const CONTROL_RE = /[\x00-\x1f\x7f]/g;
+const CONTROL_RE = /[\x00-\x1f\x7f-\x9f]/g;
 
 function writeFrameToTty(frame: Uint8Array): void {
   const fd = openSync("/dev/tty", "w");
