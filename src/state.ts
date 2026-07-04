@@ -40,6 +40,8 @@ type AutoRetryStartEvent = EventBase<"auto_retry_start"> & {
 export type BridgeEvent =
   | EventBase<"session_start">
   | EventBase<"session_shutdown">
+  | EventBase<"session_switch">
+  | EventBase<"session_branch">
   | EventBase<"agent_start">
   | EventBase<"agent_end">
   | EventBase<"turn_start">
@@ -74,6 +76,8 @@ export class BridgeState {
     switch (event.type) {
       case "session_start":
       case "session_shutdown":
+      case "session_switch":
+      case "session_branch":
         this.reset();
         break;
 
@@ -137,6 +141,9 @@ export class BridgeState {
       case "auto_retry_end":
         this.retry = undefined;
         break;
+
+      default:
+        assertNever(event);
     }
   }
 
@@ -231,4 +238,8 @@ export class BridgeState {
 
     return "retry";
   }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled bridge event: ${JSON.stringify(value)}`);
 }
