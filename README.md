@@ -5,7 +5,7 @@
 ## What It Does
 
 - Shows OMP and agent state in the Otty tab/window title while OMP is working.
-- Uses titles like `▶ π: project · bash` by default, combining state, base session title, and active tool or activity.
+- Uses titles like `▶ π: project · bash` by default, combining state, the base title, and active tool or activity. The base title comes from the OMP session name when available, with a cwd-derived fallback.
 - Restores the base title when OMP returns to idle or shuts down.
 - Provides `/otty-status` diagnostics for terminal detection, settings, backend, output state, and the last emitted title.
 
@@ -66,7 +66,7 @@ Run this inside OMP:
 /otty-status
 ```
 
-The diagnostic report shows whether Otty was detected, whether output is enabled, the selected backend, current state, last emitted title, and relevant terminal environment values.
+The diagnostic report shows whether Otty was detected, whether output is enabled, the selected backend, current state, last emitted title, settings, and relevant terminal environment values.
 
 ## Troubleshooting
 

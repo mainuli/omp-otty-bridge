@@ -74,15 +74,17 @@ To complete this section from an Otty tab:
 
 5. Let OMP return to idle. If the original/base title is restored, mark `Base title API` and `Idle API` as `pass`.
 
-6. Run `/otty-status`. If OMP shows the status notification, mark `Notify API` as `pass`. If it reports the expected working directory, mark `Context cwd API` as `pass`.
+6. Run `/otty-status`. If OMP shows the status notification, mark `Notify API` as `pass`.
 
-7. If every Otty and import check passes, keep `Primary backend for v1` as `ui-title` and set `Compatibility notes` to:
+7. Verify `ctx.cwd` through the compatibility spike, OMP logs, or another OMP-visible API check that explicitly reads the extension context cwd. If that source reports the expected working directory, mark `Context cwd API` as `pass`. Do not use `/otty-status` for this check; diagnostics does not report cwd.
+
+8. If every Otty and import check passes, keep `Primary backend for v1` as `ui-title` and set `Compatibility notes` to:
 
    ```text
    `ctx.ui.setTitle()` updates the Otty tab title; `ctx.sessionManager.getSessionName()`, `ctx.isIdle()`, `ctx.ui.notify()`, and `ctx.cwd` are available; `getPluginSettings(pluginName, cwd)` is exported.
    ```
 
-8. If `ctx.ui.setTitle()` does not update the Otty tab title, set `Primary backend for v1` to `osc-tty` and set `Compatibility notes` to:
+9. If `ctx.ui.setTitle()` does not update the Otty tab title, set `Primary backend for v1` to `osc-tty` and set `Compatibility notes` to:
 
    ```text
    `ctx.ui.setTitle()` did not update Otty; v1 uses the `osc-tty` fallback backend after OSC safety tests pass.
