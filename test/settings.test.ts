@@ -57,7 +57,7 @@ describe("normalizeSettings", () => {
     expect(normalizeSettings({ maxTitleLength: Number.POSITIVE_INFINITY }).maxTitleLength).toBe(
       DEFAULT_SETTINGS.maxTitleLength,
     );
-    expect(normalizeSettings({ maxTitleLength: "120" }).maxTitleLength).toBe(
+    expect(normalizeSettings({ maxTitleLength: "80" }).maxTitleLength).toBe(
       DEFAULT_SETTINGS.maxTitleLength,
     );
   });
