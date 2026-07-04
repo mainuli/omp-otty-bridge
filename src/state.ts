@@ -154,7 +154,7 @@ export class BridgeState {
     if (this.retry !== undefined) {
       return {
         kind: "retry",
-        label: this.retryLabel(this.retry),
+        label: minimal ? "retry" : this.retryLabel(this.retry),
         glyph: "↻",
       };
     }

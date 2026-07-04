@@ -177,6 +177,17 @@ describe("BridgeState", () => {
       label: "compacting",
       glyph: "◌",
     });
+
+    expect(
+      snapshotAfter(
+        [{ type: "auto_retry_start", attempt: 2, maxAttempts: 5 }],
+        { settings: settings({ mode: "minimal" }) },
+      ),
+    ).toEqual({
+      kind: "retry",
+      label: "retry",
+      glyph: "↻",
+    });
   });
 
   test("detailed mode shows compaction action", () => {
