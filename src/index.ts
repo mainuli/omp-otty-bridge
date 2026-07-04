@@ -35,6 +35,8 @@ type Runtime = {
   outputEnabled: boolean;
   lastState: DisplayState;
   lastTitle: string;
+  eventSequence: number;
+  idleRecheckTimer: ReturnType<typeof setTimeout> | undefined;
 };
 
 const IDLE_STATE: DisplayState = {
@@ -42,6 +44,8 @@ const IDLE_STATE: DisplayState = {
   label: "",
   glyph: "",
 };
+
+const IDLE_RECHECK_DELAYS_MS = [0, 25, 100, 250] as const;
 
 function hasUiTitle(ctx: ExtensionContext): ctx is ExtensionContext & {
   ui: { setTitle: (title: string) => void };
@@ -88,6 +92,8 @@ function createRuntime(
     outputEnabled,
     lastState: IDLE_STATE,
     lastTitle: "",
+    eventSequence: 0,
+    idleRecheckTimer: undefined,
   };
 }
 
@@ -200,6 +206,96 @@ function shouldForceIdle(bridgeEvent: BridgeEvent | null): boolean {
   return bridgeEvent?.type === "session_shutdown" || bridgeEvent?.type === "session_stop";
 }
 
+function shouldScheduleIdleRecheck(
+  bridgeEvent: BridgeEvent | null,
+  snapshot: DisplayState,
+): boolean {
+  if (snapshot.kind !== "working") {
+    return false;
+  }
+
+  switch (bridgeEvent?.type) {
+    case "agent_end":
+    case "turn_end":
+    case "tool_execution_end":
+    case "tool_approval_resolved":
+    case "session_compact":
+    case "auto_compaction_end":
+    case "auto_retry_end":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function setTimerUnref(timer: ReturnType<typeof setTimeout>): void {
+  if (typeof timer === "object" && timer !== null && "unref" in timer) {
+    (timer as { unref: () => void }).unref();
+  }
+}
+
+function clearIdleRecheck(runtime: Runtime): void {
+  if (runtime.idleRecheckTimer !== undefined) {
+    clearTimeout(runtime.idleRecheckTimer);
+    runtime.idleRecheckTimer = undefined;
+  }
+}
+
+function updateTitle(runtime: Runtime, ctx: ExtensionContext, snapshot: DisplayState): void {
+  const title = composeTitle(
+    baseTitleFromContext(ctx),
+    snapshot,
+    runtime.settings,
+  );
+
+  runtime.lastState = snapshot;
+
+  if (title !== runtime.lastTitle) {
+    runtime.backend.setTitle(title);
+    runtime.lastTitle = title;
+  }
+}
+
+function scheduleIdleRecheck(
+  runtime: Runtime,
+  ctx: ExtensionContext,
+  pi: ExtensionAPI,
+  eventSequence: number,
+  attempt = 0,
+): void {
+  const delay = IDLE_RECHECK_DELAYS_MS[attempt];
+
+  if (delay === undefined) {
+    return;
+  }
+
+  runtime.idleRecheckTimer = setTimeout(() => {
+    try {
+      runtime.idleRecheckTimer = undefined;
+
+      if (runtime.eventSequence !== eventSequence) {
+        return;
+      }
+
+      const isIdle = isContextIdle(ctx);
+
+      if (!isIdle) {
+        scheduleIdleRecheck(runtime, ctx, pi, eventSequence, attempt + 1);
+        return;
+      }
+
+      const settledSnapshot = runtime.state.snapshot(isIdle, runtime.settings);
+
+      if (settledSnapshot.kind === "idle") {
+        updateTitle(runtime, ctx, settledSnapshot);
+      }
+    } catch (error) {
+      pi.logger.warn("omp-otty-bridge idle recheck failed", { error: String(error) });
+    }
+  }, delay);
+  setTimerUnref(runtime.idleRecheckTimer);
+}
+
 export default function ompOttyBridge(
   pi: ExtensionAPI,
   overrides: TestOverrides = {},
@@ -227,8 +323,11 @@ export default function ompOttyBridge(
     try {
       const activeRuntime = await getRuntime(ctx);
       const bridgeEvent = toBridgeEvent(event);
+      let eventSequence = activeRuntime.eventSequence;
 
       if (bridgeEvent !== null) {
+        eventSequence = ++activeRuntime.eventSequence;
+        clearIdleRecheck(activeRuntime);
         activeRuntime.state.apply(bridgeEvent);
       }
 
@@ -236,17 +335,10 @@ export default function ompOttyBridge(
         shouldForceIdle(bridgeEvent) ? true : isContextIdle(ctx),
         activeRuntime.settings,
       );
-      const title = composeTitle(
-        baseTitleFromContext(ctx),
-        snapshot,
-        activeRuntime.settings,
-      );
+      updateTitle(activeRuntime, ctx, snapshot);
 
-      activeRuntime.lastState = snapshot;
-
-      if (title !== activeRuntime.lastTitle) {
-        activeRuntime.backend.setTitle(title);
-        activeRuntime.lastTitle = title;
+      if (shouldScheduleIdleRecheck(bridgeEvent, snapshot)) {
+        scheduleIdleRecheck(activeRuntime, ctx, pi, eventSequence);
       }
     } catch (error) {
       pi.logger.warn("omp-otty-bridge handler failed", { error: String(error) });

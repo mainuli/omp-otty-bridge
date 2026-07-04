@@ -75,6 +75,14 @@ async function emit(
   await handler?.(event, ctx);
 }
 
+function nextTimer(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe("ompOttyBridge", () => {
   test("registers lifecycle handlers and diagnostics command", () => {
     const fake = makePi();
@@ -172,6 +180,81 @@ describe("ompOttyBridge", () => {
     await emit(fake.handlers, "session_stop", { type: "session_stop" }, ctx);
 
     expect(titles).toEqual(["↻ pi: project · retry 2/5", "pi: project"]);
+  });
+
+  test("restores base title after end event when idle flag settles later", async () => {
+    const fake = makePi();
+    const titles: string[] = [];
+    let idle = false;
+    extension(fake.pi as never, { env: { TERM_PROGRAM: "otty" }, settings: {} });
+    const ctx = makeCtx({
+      isIdle: () => idle,
+      ui: { setTitle: (title) => titles.push(title) },
+    });
+
+    await emit(fake.handlers, "agent_start", { type: "agent_start" }, ctx);
+    await emit(fake.handlers, "agent_end", { type: "agent_end" }, ctx);
+    idle = true;
+    await nextTimer();
+
+    expect(titles).toEqual(["▶ pi: project · working", "pi: project"]);
+  });
+
+  test("retries idle restoration when idle flag settles after the next timer", async () => {
+    const fake = makePi();
+    const titles: string[] = [];
+    let idle = false;
+    extension(fake.pi as never, { env: { TERM_PROGRAM: "otty" }, settings: {} });
+    const ctx = makeCtx({
+      isIdle: () => idle,
+      ui: { setTitle: (title) => titles.push(title) },
+    });
+
+    await emit(fake.handlers, "agent_start", { type: "agent_start" }, ctx);
+    await emit(fake.handlers, "agent_end", { type: "agent_end" }, ctx);
+    await nextTimer();
+    idle = true;
+    await wait(75);
+
+    expect(titles).toEqual(["▶ pi: project · working", "pi: project"]);
+  });
+
+  test("keeps pending idle restoration across ignored event payloads", async () => {
+    const fake = makePi();
+    const titles: string[] = [];
+    let idle = false;
+    extension(fake.pi as never, { env: { TERM_PROGRAM: "otty" }, settings: {} });
+    const ctx = makeCtx({
+      isIdle: () => idle,
+      ui: { setTitle: (title) => titles.push(title) },
+    });
+
+    await emit(fake.handlers, "agent_start", { type: "agent_start" }, ctx);
+    await emit(fake.handlers, "agent_end", { type: "agent_end" }, ctx);
+    await emit(fake.handlers, "tool_execution_end", { type: "tool_execution_end" }, ctx);
+    idle = true;
+    await nextTimer();
+
+    expect(titles).toEqual(["▶ pi: project · working", "pi: project"]);
+  });
+
+  test("does not restore idle title after a newer bridge event starts", async () => {
+    const fake = makePi();
+    const titles: string[] = [];
+    let idle = false;
+    extension(fake.pi as never, { env: { TERM_PROGRAM: "otty" }, settings: {} });
+    const ctx = makeCtx({
+      isIdle: () => idle,
+      ui: { setTitle: (title) => titles.push(title) },
+    });
+
+    await emit(fake.handlers, "agent_start", { type: "agent_start" }, ctx);
+    await emit(fake.handlers, "agent_end", { type: "agent_end" }, ctx);
+    await emit(fake.handlers, "agent_start", { type: "agent_start" }, ctx);
+    idle = true;
+    await wait(75);
+
+    expect(titles).toEqual(["▶ pi: project · working"]);
   });
 
   test("loads project settings through settingsReader and applies titleFormat label-only", async () => {
