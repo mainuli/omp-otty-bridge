@@ -10,12 +10,12 @@ type EventBase<T extends string> = {
   type: T;
 };
 
-type ToolStartEvent = EventBase<"tool_execution_start" | "tool_call"> & {
+type ToolStartEvent = EventBase<"tool_execution_start"> & {
   toolCallId: string;
   toolName: string;
 };
 
-type ToolEndEvent = EventBase<"tool_execution_end" | "tool_result"> & {
+type ToolEndEvent = EventBase<"tool_execution_end"> & {
   toolCallId: string;
 };
 
@@ -97,12 +97,10 @@ export class BridgeState {
         break;
 
       case "tool_execution_start":
-      case "tool_call":
         this.runningTools.set(event.toolCallId, event.toolName);
         break;
 
       case "tool_execution_end":
-      case "tool_result":
         this.runningTools.delete(event.toolCallId);
         this.pendingApprovals.delete(event.toolCallId);
         break;

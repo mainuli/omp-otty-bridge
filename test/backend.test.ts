@@ -50,7 +50,7 @@ describe("createOscTtyBackend", () => {
     expect(() => backend.setTitle("π: project")).not.toThrow();
   });
 
-  test("strips control characters before writing frames", () => {
+  test("strips C0, DEL, and C1 control characters before writing frames", () => {
     const writes: Uint8Array[] = [];
     const backend = createOscTtyBackend({
       write: (frame) => {
@@ -58,7 +58,7 @@ describe("createOscTtyBackend", () => {
       },
     });
 
-    backend.setTitle("safe\x1b]2;injected\x07\x00title\x7f");
+    backend.setTitle("safe\x1b]2;injected\x07\x00title\x7f\u0085\u009b\u009c\u009d");
 
     expect(writes.map((frame) => decoder.decode(frame))).toEqual([
       "\x1b]0;safe]2;injectedtitle\x07",

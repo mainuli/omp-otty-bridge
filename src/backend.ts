@@ -16,10 +16,10 @@ export type OscTtyWriter = {
   write(frame: Uint8Array): void;
 };
 
-const ASCII_CONTROLS = /[\x00-\x1f\x7f]/g;
+const CONTROL_CHARS = /[\x00-\x1f\x7f-\x9f]/g;
 
 function sanitizeOscTitle(title: string): string {
-  return title.replace(ASCII_CONTROLS, "");
+  return title.replace(CONTROL_CHARS, "");
 }
 
 function writeFrameToDevTty(frame: Uint8Array): void {

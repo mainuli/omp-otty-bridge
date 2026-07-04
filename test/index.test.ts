@@ -98,15 +98,15 @@ describe("ompOttyBridge", () => {
       "session_switch",
       "tool_approval_requested",
       "tool_approval_resolved",
-      "tool_call",
       "tool_execution_end",
       "tool_execution_start",
-      "tool_result",
       "turn_end",
       "turn_start",
     ]);
     expect(fake.handlers.has("session_before_switch")).toBe(false);
     expect(fake.handlers.has("session_before_branch")).toBe(false);
+    expect(fake.handlers.has("tool_call")).toBe(false);
+    expect(fake.handlers.has("tool_result")).toBe(false);
     expect(fake.commands.get("otty-status")?.description).toBeString();
   });
 

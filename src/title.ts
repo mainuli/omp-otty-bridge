@@ -18,10 +18,10 @@ export type TitleContextLike = {
   };
 };
 
-const ASCII_CONTROLS = /[\x00-\x1f\x7f]/g;
+const CONTROL_CHARS = /[\x00-\x1f\x7f-\x9f]/g;
 
 export function sanitizeTitle(title: string, maxLength: number): string {
-  const sanitized = title.replace(ASCII_CONTROLS, "");
+  const sanitized = title.replace(CONTROL_CHARS, "");
   return sanitized.slice(0, Math.max(0, Math.floor(maxLength)));
 }
 

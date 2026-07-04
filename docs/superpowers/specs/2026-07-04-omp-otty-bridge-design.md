@@ -13,7 +13,7 @@ The first attempt in `/Users/mainul/Documents/Projects/omp-otty-bridge` is refer
 ## Goals
 
 - Install from GitHub with the standard OMP plugin flow: `omp install github:mainuli/omp-otty-bridge`.
-- Support both default user-level install and project-scoped install with `--scope project`.
+- Support GitHub install for user-level use. OMP 16.3.4 warns and ignores `--scope` for GitHub targets, so project-local development/testing uses `omp plugin link .`; future marketplace refs may use project scope if OMP supports it for that target type.
 - Use `package.json#omp.extensions` as the canonical plugin contract.
 - Load TypeScript source directly through OMP/Bun; no npm publishing or committed build output is required for v1.
 - Default to active only inside Otty.
@@ -52,12 +52,6 @@ Primary install:
 
 ```bash
 omp install github:mainuli/omp-otty-bridge
-```
-
-Project-scoped install:
-
-```bash
-omp install github:mainuli/omp-otty-bridge --scope project
 ```
 
 Development install:
@@ -144,15 +138,16 @@ Implements a diagnostic command named `/otty-status` that reports:
 The reducer should derive a deterministic display state from OMP's documented extension events. Reliable event sources include:
 
 - `session_start`, `session_shutdown`;
-- `session_before_switch`, `session_switch`;
-- `session_before_branch`, `session_branch`;
+- `session_switch`, `session_branch`;
 - `agent_start`, `agent_end`;
 - `turn_start`, `turn_end`;
-- `tool_call`, `tool_result`;
+- `tool_execution_start`, `tool_execution_end`;
 - `tool_approval_requested`, `tool_approval_resolved`;
 - `auto_compaction_start`, `auto_compaction_end`;
 - `auto_retry_start`, `auto_retry_end`;
 - `session_before_compact`, `session.compacting`, `session_compact`;
+
+Cancelable/pre-execution events such as `session_before_switch`, `session_before_branch`, `tool_call`, and `tool_result` are intentionally avoided for cosmetic title updates. Completed `session_switch` and `session_branch` events reset state, and `tool_execution_start`/`tool_execution_end` track active tool execution without awaiting settings/backend work during pre-execution gating.
 
 `auto_compaction_start` and `auto_compaction_end` represent OMP's automatic compaction flow. `session_before_compact`, `session.compacting`, and `session_compact` represent explicit/session compaction flow. Both map to the same display priority, but they are tracked separately so an end event from one family cannot clear the other family's active state.
 
@@ -267,7 +262,7 @@ The README must cover:
 - what it does not do;
 - Otty-only default behavior;
 - install from GitHub;
-- project-scoped install;
+- project-local development/testing with `omp plugin link .`, with a note that OMP 16.3.4 warns and ignores `--scope` for GitHub targets;
 - configuration with `omp plugin config`;
 - diagnostic command usage;
 - minimum supported OMP version `16.3.4`;

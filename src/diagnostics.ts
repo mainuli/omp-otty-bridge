@@ -3,7 +3,7 @@ import type { DisplayState } from "./state";
 import type { TerminalDiagnostics } from "./terminal";
 import { sanitizeTitle } from "./title";
 
-const ASCII_CONTROLS = /[\x00-\x1f\x7f]/g;
+const CONTROL_CHARS = /[\x00-\x1f\x7f-\x9f]/g;
 
 export interface DiagnosticsInput {
   detectedOtty: boolean;
@@ -42,5 +42,5 @@ function formatTerminalValue(value: string | undefined): string {
 }
 
 function sanitizeReportField(value: string): string {
-  return value.replace(ASCII_CONTROLS, "");
+  return value.replace(CONTROL_CHARS, "");
 }

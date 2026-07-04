@@ -16,8 +16,8 @@ function settings(overrides: Partial<BridgeSettings> = {}): BridgeSettings {
 }
 
 describe("sanitizeTitle", () => {
-  test("strips ASCII controls and limits length", () => {
-    expect(sanitizeTitle("ab\u0000c\u001fd\u007fe", 4)).toBe("abcd");
+  test("strips C0, DEL, and C1 controls and limits length", () => {
+    expect(sanitizeTitle("ab\u0000c\u001fd\u007fe\u0085f\u009bg", 6)).toBe("abcdef");
   });
 });
 

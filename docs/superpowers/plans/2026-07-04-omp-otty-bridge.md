@@ -6,7 +6,9 @@
 
 **Architecture:** The extension is an OMP plugin package whose `package.json#omp.extensions` entry loads `src/index.ts`. The extension detects Otty, derives state from documented OMP extension events, formats a sanitized title, and writes it through an injected title backend that defaults to `ctx.ui.setTitle()`. The full implementation is gated by an Otty compatibility spike that proves `ctx.ui.setTitle()` and `ctx.sessionManager.getSessionName()` work as expected.
 
-**Tech Stack:** TypeScript, Bun test runner, OMP 16.3.4 extension APIs, GitHub plugin install via `omp install github:mainuli/omp-otty-bridge`.
+Cancelable/pre-execution events are intentionally avoided for cosmetic title updates. Completed `session_switch` and `session_branch` events reset state, while `tool_execution_start` and `tool_execution_end` track active tools without doing settings/backend work in tool gating handlers.
+
+**Tech Stack:** TypeScript, Bun test runner, OMP 16.3.4 extension APIs, GitHub plugin install via `omp install github:mainuli/omp-otty-bridge`. OMP 16.3.4 warns and ignores `--scope` for GitHub targets; use `omp plugin link .` for project-local development/testing, and reserve project scope for future marketplace refs if OMP supports it.
 
 ---
 
@@ -360,11 +362,13 @@ Requires OMP 16.3.4 or newer. Native Otty badges and Otty agent history are not 
 omp install github:mainuli/omp-otty-bridge
 ```
 
-Project-scoped install:
+Project-local development/testing:
 
 ```bash
-omp install github:mainuli/omp-otty-bridge --scope project
+omp plugin link .
 ```
+
+OMP 16.3.4 warns and ignores `--scope` for GitHub targets. Future marketplace refs may use project scope if OMP supports it for that target type.
 
 ## Development
 
@@ -869,21 +873,6 @@ describe("BridgeState", () => {
     expect(state.snapshot(false, DEFAULT_SETTINGS)).toEqual({ kind: "working", label: "working", glyph: "▶" });
   });
 
-  test("tracks tool_call and tool_result as lifecycle aliases", () => {
-    const state = new BridgeState();
-    state.apply({ type: "tool_call", toolCallId: "1", toolName: "read" });
-    expect(state.snapshot(false, DEFAULT_SETTINGS)).toEqual({ kind: "tool", label: "read", glyph: "▶" });
-    state.apply({ type: "tool_result", toolCallId: "1" });
-    expect(state.snapshot(false, DEFAULT_SETTINGS)).toEqual({ kind: "working", label: "working", glyph: "▶" });
-  });
-
-  test("deduplicates tool call and execution aliases with the same id", () => {
-    const state = new BridgeState();
-    state.apply({ type: "tool_call", toolCallId: "1", toolName: "bash" });
-    state.apply({ type: "tool_execution_start", toolCallId: "1", toolName: "bash" });
-    expect(state.snapshot(false, DEFAULT_SETTINGS)).toEqual({ kind: "tool", label: "bash", glyph: "▶" });
-  });
-
   test("awaiting approval wins over tools", () => {
     const state = new BridgeState();
     state.apply({ type: "tool_execution_start", toolCallId: "1", toolName: "bash" });
@@ -939,8 +928,6 @@ export type BridgeEvent =
   | { type: "session_before_compact" | "session.compacting" | "session_compact" }
   | { type: "tool_execution_start"; toolCallId: string; toolName: string }
   | { type: "tool_execution_end"; toolCallId: string }
-  | { type: "tool_call"; toolCallId: string; toolName: string }
-  | { type: "tool_result"; toolCallId: string }
   | { type: "tool_approval_requested"; toolCallId: string; toolName: string }
   | { type: "tool_approval_resolved"; toolCallId: string }
   | { type: "auto_compaction_start"; action: string }
@@ -978,11 +965,9 @@ export class BridgeState {
         this.#approvals.clear();
         break;
       case "tool_execution_start":
-      case "tool_call":
         this.#tools.set(event.toolCallId, event.toolName);
         break;
       case "tool_execution_end":
-      case "tool_result":
         this.#tools.delete(event.toolCallId);
         this.#approvals.delete(event.toolCallId);
         break;
@@ -1509,12 +1494,10 @@ function toBridgeEvent(event: Record<string, unknown>): BridgeEvent | null {
     case "auto_retry_end":
       return { type: event.type };
     case "tool_execution_start":
-    case "tool_call":
       return typeof event.toolCallId === "string" && typeof event.toolName === "string"
         ? { type: event.type, toolCallId: event.toolCallId, toolName: event.toolName }
         : null;
     case "tool_execution_end":
-    case "tool_result":
       return typeof event.toolCallId === "string" ? { type: event.type, toolCallId: event.toolCallId } : null;
     case "tool_approval_requested":
       return typeof event.toolCallId === "string" && typeof event.toolName === "string"
@@ -1575,8 +1558,6 @@ export default function ompOttyBridge(pi: ExtensionAPI, overrides: TestOverrides
   pi.on("turn_end", (event, ctx) => handle(event as Record<string, unknown>, ctx));
   pi.on("tool_execution_start", (event, ctx) => handle(event as Record<string, unknown>, ctx));
   pi.on("tool_execution_end", (event, ctx) => handle(event as Record<string, unknown>, ctx));
-  pi.on("tool_call", (event, ctx) => handle(event as Record<string, unknown>, ctx));
-  pi.on("tool_result", (event, ctx) => handle(event as Record<string, unknown>, ctx));
   pi.on("tool_approval_requested", (event, ctx) => handle(event as Record<string, unknown>, ctx));
   pi.on("tool_approval_resolved", (event, ctx) => handle(event as Record<string, unknown>, ctx));
   pi.on("auto_compaction_start", (event, ctx) => handle(event as Record<string, unknown>, ctx));
@@ -1673,11 +1654,13 @@ Native Otty parity requires Otty to expose a stable custom-agent API or support 
 omp install github:mainuli/omp-otty-bridge
 ```
 
-Project-scoped install:
+Project-local development/testing:
 
 ```bash
-omp install github:mainuli/omp-otty-bridge --scope project
+omp plugin link .
 ```
+
+OMP 16.3.4 warns and ignores `--scope` for GitHub targets; project scope may apply to future marketplace refs if OMP supports it.
 
 Restart OMP after installing.
 

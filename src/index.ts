@@ -137,7 +137,6 @@ function toBridgeEvent(value: unknown): BridgeEvent | null {
       return { type: event.type };
 
     case "tool_execution_start":
-    case "tool_call":
       if (typeof event.toolCallId !== "string" || typeof event.toolName !== "string") {
         return null;
       }
@@ -149,7 +148,6 @@ function toBridgeEvent(value: unknown): BridgeEvent | null {
       };
 
     case "tool_execution_end":
-    case "tool_result":
       if (typeof event.toolCallId !== "string") {
         return null;
       }
@@ -269,8 +267,6 @@ export default function ompOttyBridge(
   pi.on("turn_end", (event, ctx) => handle(event, ctx));
   pi.on("tool_execution_start", (event, ctx) => handle(event, ctx));
   pi.on("tool_execution_end", (event, ctx) => handle(event, ctx));
-  pi.on("tool_call", (event, ctx) => handle(event, ctx));
-  pi.on("tool_result", (event, ctx) => handle(event, ctx));
   pi.on("tool_approval_requested", (event, ctx) => handle(event, ctx));
   pi.on("tool_approval_resolved", (event, ctx) => handle(event, ctx));
   pi.on("auto_compaction_start", (event, ctx) => handle(event, ctx));

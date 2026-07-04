@@ -87,43 +87,6 @@ describe("BridgeState", () => {
     });
   });
 
-  test("tracks tool_call/tool_result aliases", () => {
-    expect(
-      snapshotAfter([
-        { type: "tool_call", toolCallId: "call-1", toolName: "grep" },
-      ]),
-    ).toEqual({
-      kind: "tool",
-      label: "grep",
-      glyph: "▶",
-    });
-
-    expect(
-      snapshotAfter([
-        { type: "agent_start" },
-        { type: "tool_call", toolCallId: "call-1", toolName: "grep" },
-        { type: "tool_result", toolCallId: "call-1" },
-      ]),
-    ).toEqual({
-      kind: "working",
-      label: "working",
-      glyph: "▶",
-    });
-  });
-
-  test("deduplicates tool_call and tool_execution_start with same id", () => {
-    expect(
-      snapshotAfter([
-        { type: "tool_call", toolCallId: "shared", toolName: "grep" },
-        { type: "tool_execution_start", toolCallId: "shared", toolName: "bash" },
-      ]),
-    ).toEqual({
-      kind: "tool",
-      label: "bash",
-      glyph: "▶",
-    });
-  });
-
   test("awaiting approval wins over tools", () => {
     expect(
       snapshotAfter([
