@@ -42,6 +42,18 @@
   omp install github:mainuli/omp-otty-bridge --dry-run
   ```
 
+- [ ] GitHub project-scope behavior check for OMP 16.3.4:
+
+  ```bash
+  omp install github:mainuli/omp-otty-bridge --scope project --dry-run
+  ```
+
+  Record `pass` only if the command exits 0 and prints the expected warning that
+  `--scope` is only supported for marketplace installs and is ignored for the
+  GitHub target. Project-local development/testing should use
+  `omp plugin link .`; if a future marketplace reference is published, project
+  scope can be used with that marketplace reference.
+
 ## Compatibility Spike
 
 - OMP version target: 16.3.4

@@ -30,11 +30,20 @@ Install globally:
 omp install github:mainuli/omp-otty-bridge
 ```
 
-Install for the current project:
+OMP 16.3.4 supports `--scope project` only for marketplace installs. For GitHub
+targets, `omp install github:mainuli/omp-otty-bridge --scope project` prints a
+warning and ignores `--scope project`, so it is not a project-scoped GitHub
+install.
+
+For project-local development and testing, link the plugin from the project or
+worktree:
 
 ```bash
-omp install github:mainuli/omp-otty-bridge --scope project
+omp plugin link .
 ```
+
+If a future marketplace reference is published, project scope can be used with
+that marketplace reference.
 
 Restart OMP after installation so the extension is loaded from `package.json#omp.extensions`.
 
