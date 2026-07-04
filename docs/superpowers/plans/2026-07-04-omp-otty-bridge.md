@@ -6,7 +6,7 @@
 
 **Architecture:** The extension is an OMP plugin package whose `package.json#omp.extensions` entry loads `src/index.ts`. The extension detects Otty, derives state from documented OMP extension events, formats a sanitized title, and writes it through an injected title backend that defaults to `ctx.ui.setTitle()`. The full implementation is gated by an Otty compatibility spike that proves `ctx.ui.setTitle()` and `ctx.sessionManager.getSessionName()` work as expected.
 
-Cancelable/pre-execution events are intentionally avoided for cosmetic title updates. Completed `session_switch` and `session_branch` events reset state, while `tool_execution_start` and `tool_execution_end` track active tools without doing settings/backend work in tool gating handlers.
+Cancelable/pre-execution switch and branch events are intentionally avoided for cosmetic title updates. Completed `session_switch` and `session_branch` events reset state, while active tools are sourced from `tool_execution_start` and `tool_execution_end` without doing settings/backend work in tool gating handlers.
 
 **Tech Stack:** TypeScript, Bun test runner, OMP 16.3.4 extension APIs, GitHub plugin install via `omp install github:mainuli/omp-otty-bridge`. OMP 16.3.4 warns and ignores `--scope` for GitHub targets; use `omp plugin link .` for project-local development/testing, and reserve project scope for future marketplace refs if OMP supports it.
 

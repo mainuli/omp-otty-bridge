@@ -147,7 +147,7 @@ The reducer should derive a deterministic display state from OMP's documented ex
 - `auto_retry_start`, `auto_retry_end`;
 - `session_before_compact`, `session.compacting`, `session_compact`;
 
-Cancelable/pre-execution events such as `session_before_switch`, `session_before_branch`, `tool_call`, and `tool_result` are intentionally avoided for cosmetic title updates. Completed `session_switch` and `session_branch` events reset state, and `tool_execution_start`/`tool_execution_end` track active tool execution without awaiting settings/backend work during pre-execution gating.
+Cancelable/pre-execution events such as `session_before_switch` and `session_before_branch` are intentionally avoided for cosmetic title side effects; completed `session_switch` and `session_branch` events reset state instead. `tool_call` and `tool_result` are also intentionally not tracked for titles: active tools are sourced from `tool_execution_start` and `tool_execution_end`, which avoids cosmetic title work on gating/pre-execution paths.
 
 `auto_compaction_start` and `auto_compaction_end` represent OMP's automatic compaction flow. `session_before_compact`, `session.compacting`, and `session_compact` represent explicit/session compaction flow. Both map to the same display priority, but they are tracked separately so an end event from one family cannot clear the other family's active state.
 
