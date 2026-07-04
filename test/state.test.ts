@@ -240,6 +240,56 @@ describe("BridgeState", () => {
     });
   });
 
+  test("turn end clears stale compaction and retry transients", () => {
+    expect(
+      snapshotAfter([
+        { type: "agent_start" },
+        { type: "auto_retry_start", attempt: 2, maxAttempts: 5 },
+        { type: "auto_compaction_start", action: "summarizing" },
+        { type: "session.compacting" },
+        { type: "turn_end" },
+      ]),
+    ).toEqual({
+      kind: "idle",
+      label: "",
+      glyph: "",
+    });
+  });
+
+  test("agent end clears stale compaction and retry transients", () => {
+    expect(
+      snapshotAfter([
+        { type: "agent_start" },
+        { type: "auto_retry_start", attempt: 2, maxAttempts: 5 },
+        { type: "auto_compaction_start", action: "summarizing" },
+        { type: "session.compacting" },
+        { type: "agent_end" },
+      ]),
+    ).toEqual({
+      kind: "idle",
+      label: "",
+      glyph: "",
+    });
+  });
+
+  test("session stop resets transient state", () => {
+    expect(
+      snapshotAfter([
+        { type: "agent_start" },
+        { type: "tool_execution_start", toolCallId: "tool-1", toolName: "bash" },
+        { type: "tool_approval_requested", toolCallId: "approval-1", toolName: "edit" },
+        { type: "auto_retry_start", attempt: 2, maxAttempts: 5 },
+        { type: "auto_compaction_start", action: "summarizing" },
+        { type: "session.compacting" },
+        { type: "session_stop" },
+      ]),
+    ).toEqual({
+      kind: "idle",
+      label: "",
+      glyph: "",
+    });
+  });
+
   test("tracks session compacting separately from auto compaction", () => {
     expect(
       snapshotAfter([{ type: "session.compacting" }]),

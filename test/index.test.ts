@@ -94,6 +94,7 @@ describe("ompOttyBridge", () => {
       "session_compact",
       "session_shutdown",
       "session_start",
+      "session_stop",
       "session_switch",
       "tool_approval_requested",
       "tool_approval_resolved",
@@ -154,6 +155,23 @@ describe("ompOttyBridge", () => {
     await emit(fake.handlers, "session_shutdown", { type: "session_shutdown" }, ctx);
 
     expect(titles).toEqual(["▶ pi: project · bash", "pi: project"]);
+  });
+
+  test("restores base title on session stop even when context is not idle", async () => {
+    const fake = makePi();
+    const titles: string[] = [];
+    extension(fake.pi as never, { env: { TERM_PROGRAM: "otty" }, settings: {} });
+    const ctx = makeCtx({ ui: { setTitle: (title) => titles.push(title) } });
+
+    await emit(
+      fake.handlers,
+      "auto_retry_start",
+      { type: "auto_retry_start", attempt: 2, maxAttempts: 5 },
+      ctx,
+    );
+    await emit(fake.handlers, "session_stop", { type: "session_stop" }, ctx);
+
+    expect(titles).toEqual(["↻ pi: project · retry 2/5", "pi: project"]);
   });
 
   test("loads project settings through settingsReader and applies titleFormat label-only", async () => {

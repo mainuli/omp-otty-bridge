@@ -40,6 +40,7 @@ type AutoRetryStartEvent = EventBase<"auto_retry_start"> & {
 export type BridgeEvent =
   | EventBase<"session_start">
   | EventBase<"session_shutdown">
+  | EventBase<"session_stop">
   | EventBase<"session_switch">
   | EventBase<"session_branch">
   | EventBase<"agent_start">
@@ -76,6 +77,7 @@ export class BridgeState {
     switch (event.type) {
       case "session_start":
       case "session_shutdown":
+      case "session_stop":
       case "session_switch":
       case "session_branch":
         this.reset();
@@ -91,6 +93,7 @@ export class BridgeState {
         this.agentActive = false;
         this.runningTools.clear();
         this.pendingApprovals.clear();
+        this.clearTransients();
         break;
 
       case "tool_execution_start":
@@ -213,6 +216,10 @@ export class BridgeState {
     this.agentActive = false;
     this.runningTools.clear();
     this.pendingApprovals.clear();
+    this.clearTransients();
+  }
+
+  private clearTransients(): void {
     this.autoCompactionActive = false;
     this.autoCompactionAction = undefined;
     this.sessionCompacting = false;

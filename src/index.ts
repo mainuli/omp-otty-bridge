@@ -122,6 +122,7 @@ function toBridgeEvent(value: unknown): BridgeEvent | null {
   switch (event.type) {
     case "session_start":
     case "session_shutdown":
+    case "session_stop":
     case "session_switch":
     case "session_branch":
     case "agent_start":
@@ -197,6 +198,10 @@ function toBridgeEvent(value: unknown): BridgeEvent | null {
   }
 }
 
+function shouldForceIdle(bridgeEvent: BridgeEvent | null): boolean {
+  return bridgeEvent?.type === "session_shutdown" || bridgeEvent?.type === "session_stop";
+}
+
 export default function ompOttyBridge(
   pi: ExtensionAPI,
   overrides: TestOverrides = {},
@@ -230,7 +235,7 @@ export default function ompOttyBridge(
       }
 
       const snapshot = activeRuntime.state.snapshot(
-        bridgeEvent?.type === "session_shutdown" ? true : isContextIdle(ctx),
+        shouldForceIdle(bridgeEvent) ? true : isContextIdle(ctx),
         activeRuntime.settings,
       );
       const title = composeTitle(
@@ -252,6 +257,7 @@ export default function ompOttyBridge(
 
   pi.on("session_start", (event, ctx) => handle(event, ctx));
   pi.on("session_shutdown", (event, ctx) => handle(event, ctx));
+  pi.on("session_stop", (event, ctx) => handle(event, ctx));
   pi.on("session_switch", (event, ctx) => handle(event, ctx));
   pi.on("session_branch", (event, ctx) => handle(event, ctx));
   pi.on("session_before_compact", (event, ctx) => handle(event, ctx));
