@@ -41,7 +41,6 @@ If you linked a development checkout and want to go back to the public GitHub in
 
 ```bash
 omp plugin uninstall omp-otty-bridge
-rm -f ~/.omp/plugins/node_modules/omp-otty-bridge
 omp install github:mainuli/omp-otty-bridge
 ```
 

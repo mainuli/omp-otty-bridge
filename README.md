@@ -48,7 +48,6 @@ To return from a linked development copy to the GitHub install:
 
 ```bash
 omp plugin uninstall omp-otty-bridge
-rm -f ~/.omp/plugins/node_modules/omp-otty-bridge
 omp install github:mainuli/omp-otty-bridge
 ```
 
@@ -125,7 +124,6 @@ If the title stays in a working state after OMP finishes, update to the latest G
 
 ```bash
 omp plugin uninstall omp-otty-bridge
-rm -f ~/.omp/plugins/node_modules/omp-otty-bridge
 omp install github:mainuli/omp-otty-bridge
 ```
 

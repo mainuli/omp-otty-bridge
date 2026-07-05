@@ -13,7 +13,6 @@
   },
   "include": [
     "src/**/*.ts",
-    "test/**/*.ts",
-    "spikes/**/*.ts"
+    "test/**/*.ts"
   ]
 }
