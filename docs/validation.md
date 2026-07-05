@@ -122,5 +122,5 @@ To repeat the smoke test:
 - [ ] GitHub install dry run after merge to `main`
 - [ ] Manual Otty smoke test when runtime behavior changes
 - [ ] GitHub Actions CI passes on the release PR
-- [ ] Repository metadata is current
+- [ ] Repository metadata is current: description `OMP extension that shows live OMP state in Otty tab titles.`, homepage `https://github.com/mainuli/omp-otty-bridge#readme`, topics `omp`, `omp-sh`, `otty`, `terminal`, `extension`
 - [ ] `LICENSE` matches `package.json#license`
