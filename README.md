@@ -5,7 +5,7 @@
 ## What It Does
 
 - Shows when OMP is working, using a title such as `▶ π: project · bash`.
-- Includes active tool names or compact state labels depending on settings.
+- Includes active tool names or compact state labels based on settings.
 - Restores the base OMP title after the session returns to idle.
 - Provides `/otty-status` diagnostics for detection, settings, backend, state, and the last emitted title.
 
