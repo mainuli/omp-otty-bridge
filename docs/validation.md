@@ -37,10 +37,10 @@ function
 Confirm `--dry-run` support:
 
 ```bash
-omp install --help | rg -- '--dry-run'
+omp install --help | grep -- '--dry-run'
 ```
 
-If the command prints `--dry-run`, run after the release commit is pushed to `main`:
+If the command prints `--dry-run`, then after the release commit is pushed to `main`, run:
 
 ```bash
 omp install github:mainuli/omp-otty-bridge --dry-run
