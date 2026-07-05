@@ -1,61 +1,66 @@
 # omp-otty-bridge
 
-`omp-otty-bridge` is an OMP (`omp.sh`) extension for Otty users. It uses stable OMP extension APIs to surface OMP and agent activity in the Otty tab or window title without depending on private Otty internals.
+`omp-otty-bridge` is an OMP (`omp.sh`) extension for Otty users. It shows live OMP activity in the Otty tab or window title using stable OMP extension APIs.
 
 ## What It Does
 
-- Shows OMP and agent state in the Otty tab/window title while OMP is working.
-- Uses titles like `▶ π: project · bash` by default, combining state, the base title, and active tool or activity. The base title comes from the OMP session name when available, with a cwd-derived fallback.
-- Restores the base title when OMP returns to idle or shuts down.
-- Provides `/otty-status` diagnostics for terminal detection, settings, backend, output state, and the last emitted title.
+- Shows when OMP is working, using a title such as `▶ π: project · bash`.
+- Includes active tool names or compact state labels depending on settings.
+- Restores the base OMP title after the session returns to idle.
+- Provides `/otty-status` diagnostics for detection, settings, backend, state, and the last emitted title.
 
 ## What It Does Not Do
 
-- It does not provide native Otty badges, notifications, or history entries.
-- It does not spoof Claude, Codex, OpenCode, or any other native Otty agent integration.
-- It does not use private Otty IPC or process-name detection.
-- Native Otty parity requires a stable Otty custom-agent API or direct OMP support.
+- It does not provide native Otty badges, Otty notifications, or Otty history entries.
+- It does not spoof Claude, Codex, OpenCode, or any other native Otty agent.
+- It does not call private Otty IPC or rely on process-name detection.
+- It is not published to npm in this release.
+
+Native Otty parity requires a stable Otty custom-agent API or direct OMP support. This extension stays on stable public OMP APIs.
 
 ## Requirements
 
 - OMP 16.3.4 or newer.
-- Otty for default activation. Outside Otty, title output is suppressed unless `nonOttyBehavior` is enabled.
+- Otty for default title output.
 - Bun-compatible OMP plugin loading.
+
+Outside Otty, output is disabled by default. You can opt into non-Otty title output with `nonOttyBehavior enabled`.
 
 ## Install
 
-Install globally:
+Install from GitHub:
 
 ```bash
 omp install github:mainuli/omp-otty-bridge
 ```
 
-OMP 16.3.4 supports `--scope project` only for marketplace installs. For GitHub
-targets, `omp install github:mainuli/omp-otty-bridge --scope project` prints a
-warning and ignores `--scope project`, so it is not a project-scoped GitHub
-install.
+Restart OMP after installation so it loads the extension from `package.json#omp.extensions`.
 
-For project-local development and testing, link the plugin from the project or
-worktree:
+OMP 16.3.4 supports `--scope project` only for marketplace installs. GitHub targets ignore `--scope project`, so use the global GitHub install above for normal use.
+
+For local development, link a checkout:
 
 ```bash
 omp plugin link .
 ```
 
-If a future marketplace reference is published, project scope can be used with
-that marketplace reference.
+To return from a linked development copy to the GitHub install:
 
-Restart OMP after installation so the extension is loaded from `package.json#omp.extensions`.
+```bash
+omp plugin uninstall omp-otty-bridge
+rm -f ~/.omp/plugins/node_modules/omp-otty-bridge
+omp install github:mainuli/omp-otty-bridge
+```
 
 ## Configuration
 
-List available settings:
+List settings:
 
 ```bash
 omp plugin config list omp-otty-bridge
 ```
 
-Use compact state labels:
+Use compact labels:
 
 ```bash
 omp plugin config set omp-otty-bridge mode minimal
@@ -67,45 +72,62 @@ Allow title output outside Otty:
 omp plugin config set omp-otty-bridge nonOttyBehavior enabled
 ```
 
+Use OSC terminal-title output instead of OMP's UI title API:
+
+```bash
+omp plugin config set omp-otty-bridge backend osc-tty
+```
+
+The default backend is `ui-title`.
+
 ## Diagnostics
 
-Run this inside OMP:
+Inside OMP, run:
 
 ```text
 /otty-status
 ```
 
-The diagnostic report shows whether Otty was detected, whether output is enabled, the selected backend, current state, last emitted title, settings, and relevant terminal environment values.
+The report shows:
+
+- whether Otty was detected;
+- whether output is enabled;
+- selected backend;
+- current bridge state;
+- last emitted title;
+- bridge settings;
+- relevant terminal environment values.
 
 ## Troubleshooting
 
-1. Confirm OMP is running inside Otty:
+Confirm OMP is running inside Otty:
 
-   ```bash
-   echo "$TERM_PROGRAM"
-   ```
+```bash
+echo "$TERM_PROGRAM"
+```
 
-   Expected value: `otty`.
+Expected value:
 
-2. Confirm the plugin is enabled:
+```text
+otty
+```
 
-   ```bash
-   omp plugin config list omp-otty-bridge
-   ```
+Confirm the plugin is installed and enabled:
 
-   Check that `enabled` is `true`.
+```bash
+omp plugin list
+omp plugin config list omp-otty-bridge
+```
 
-3. Confirm the backend is `ui-title`:
+If `/otty-status` is missing, restart OMP. If it is still missing, OMP did not load the extension.
 
-   ```bash
-   omp plugin config list omp-otty-bridge
-   ```
+If the title stays in a working state after OMP finishes, update to the latest GitHub version and restart OMP:
 
-   The default backend should be `ui-title`.
-
-4. Run `/otty-status` before and after a prompt that triggers a tool call. If the command is missing, OMP did not load the extension from `package.json#omp.extensions`.
-
-5. Follow the validation steps in [docs/release-checklist.md](docs/release-checklist.md), including the manual Otty smoke test from a real Otty session. Do not mark Otty-specific checks as passing from a non-Otty shell.
+```bash
+omp plugin uninstall omp-otty-bridge
+rm -f ~/.omp/plugins/node_modules/omp-otty-bridge
+omp install github:mainuli/omp-otty-bridge
+```
 
 ## Development
 
@@ -115,6 +137,12 @@ bun test
 bun run typecheck
 omp plugin link .
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and release checks.
+
+## Validation
+
+See [docs/validation.md](docs/validation.md) for automated checks and the manual Otty smoke test.
 
 ## License
 
