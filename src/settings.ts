@@ -3,6 +3,7 @@ import { getPluginSettings } from "@oh-my-pi/pi-coding-agent/extensibility/plugi
 export type BridgeMode = "minimal" | "detailed";
 export type TitleFormat = "glyph-label" | "label-only" | "glyph-only";
 export type NonOttyBehavior = "disabled" | "enabled";
+export type MultiplexerBehavior = "disabled" | "enabled";
 export type BackendName = "ui-title" | "osc-tty";
 
 export type BridgeSettings = {
@@ -11,6 +12,7 @@ export type BridgeSettings = {
   titleFormat: TitleFormat;
   maxTitleLength: number;
   nonOttyBehavior: NonOttyBehavior;
+  multiplexerBehavior: MultiplexerBehavior;
   backend: BackendName;
 };
 
@@ -27,12 +29,14 @@ export const DEFAULT_SETTINGS: BridgeSettings = {
   titleFormat: "glyph-label",
   maxTitleLength: 120,
   nonOttyBehavior: "disabled",
+  multiplexerBehavior: "disabled",
   backend: "ui-title",
 };
 
 const BRIDGE_MODES: readonly BridgeMode[] = ["minimal", "detailed"];
 const TITLE_FORMATS: readonly TitleFormat[] = ["glyph-label", "label-only", "glyph-only"];
 const NON_OTTY_BEHAVIORS: readonly NonOttyBehavior[] = ["disabled", "enabled"];
+const MULTIPLEXER_BEHAVIORS: readonly MultiplexerBehavior[] = ["disabled", "enabled"];
 const BACKEND_NAMES: readonly BackendName[] = ["ui-title", "osc-tty"];
 
 function normalizeEnum<T extends string>(
@@ -69,6 +73,11 @@ export function normalizeSettings(input: Record<string, unknown> = {}): BridgeSe
       input.nonOttyBehavior,
       NON_OTTY_BEHAVIORS,
       DEFAULT_SETTINGS.nonOttyBehavior,
+    ),
+    multiplexerBehavior: normalizeEnum(
+      input.multiplexerBehavior,
+      MULTIPLEXER_BEHAVIORS,
+      DEFAULT_SETTINGS.multiplexerBehavior,
     ),
     backend: normalizeEnum(input.backend, BACKEND_NAMES, DEFAULT_SETTINGS.backend),
   };

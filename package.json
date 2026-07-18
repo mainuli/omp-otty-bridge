@@ -1,7 +1,7 @@
 {
   "name": "omp-otty-bridge",
   "version": "0.1.0",
-  "description": "OMP extension that shows live OMP state in Otty tab titles.",
+  "description": "OMP extension that shows live OMP state in direct Otty tab titles.",
   "private": false,
   "type": "module",
   "license": "MIT",
@@ -28,7 +28,7 @@
   "omp": {
     "name": "OMP Otty Bridge",
     "version": "0.1.0",
-    "description": "Show OMP live state in Otty tab titles.",
+    "description": "Show OMP live state in direct Otty tab titles.",
     "extensions": [
       "src/index.ts"
     ],
@@ -68,6 +68,15 @@
       "nonOttyBehavior": {
         "type": "enum",
         "description": "Whether to emit title updates outside Otty.",
+        "values": [
+          "disabled",
+          "enabled"
+        ],
+        "default": "disabled"
+      },
+      "multiplexerBehavior": {
+        "type": "enum",
+        "description": "Whether to emit best-effort titles inside tmux, Zellij, or GNU screen. Herdr always delegates to its native OMP integration.",
         "values": [
           "disabled",
           "enabled"

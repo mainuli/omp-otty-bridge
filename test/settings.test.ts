@@ -21,6 +21,7 @@ describe("normalizeSettings", () => {
         titleFormat: "glyph-only",
         maxTitleLength: 80,
         nonOttyBehavior: "enabled",
+        multiplexerBehavior: "enabled",
         backend: "osc-tty",
       }),
     ).toEqual({
@@ -29,6 +30,7 @@ describe("normalizeSettings", () => {
       titleFormat: "glyph-only",
       maxTitleLength: 80,
       nonOttyBehavior: "enabled",
+      multiplexerBehavior: "enabled",
       backend: "osc-tty",
     });
   });
@@ -40,6 +42,7 @@ describe("normalizeSettings", () => {
         mode: "verbose",
         titleFormat: "emoji-label",
         nonOttyBehavior: "ask",
+        multiplexerBehavior: "auto",
         backend: "terminal",
       }),
     ).toEqual(DEFAULT_SETTINGS);
