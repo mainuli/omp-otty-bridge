@@ -15,7 +15,12 @@ import {
   type PluginSettingsReader,
 } from "./settings";
 import { BridgeState, type BridgeEvent, type DisplayState } from "./state";
-import { detectTerminal, shouldEmitTitles, type TerminalDetection } from "./terminal";
+import {
+  decideTitleOutput,
+  detectTerminal,
+  type TerminalDetection,
+  type TitleOutputDecision,
+} from "./terminal";
 import { baseTitleFromContext, composeTitle } from "./title";
 
 export interface TestOverrides {
@@ -32,9 +37,9 @@ type Runtime = {
   settings: BridgeSettings;
   terminal: TerminalDetection;
   backend: TitleBackend;
-  outputEnabled: boolean;
+  outputDecision: TitleOutputDecision;
   lastState: DisplayState;
-  lastTitle: string;
+  lastComposedTitle: string;
   eventSequence: number;
   idleRecheckTimer: ReturnType<typeof setTimeout> | undefined;
 };
@@ -81,17 +86,17 @@ function createRuntime(
   terminal: TerminalDetection,
   overrides: TestOverrides,
 ): Runtime {
-  const outputEnabled = shouldEmitTitles(terminal, settings);
-  const backend = createBackend(ctx, settings, outputEnabled, overrides);
+  const outputDecision = decideTitleOutput(terminal, settings);
+  const backend = createBackend(ctx, settings, outputDecision.enabled, overrides);
 
   return {
     state: new BridgeState(),
     settings,
     terminal,
     backend,
-    outputEnabled,
+    outputDecision,
     lastState: IDLE_STATE,
-    lastTitle: "",
+    lastComposedTitle: "",
     eventSequence: 0,
     idleRecheckTimer: undefined,
   };
@@ -250,9 +255,9 @@ function updateTitle(runtime: Runtime, ctx: ExtensionContext, snapshot: DisplayS
 
   runtime.lastState = snapshot;
 
-  if (title !== runtime.lastTitle) {
+  if (title !== runtime.lastComposedTitle) {
     runtime.backend.setTitle(title);
-    runtime.lastTitle = title;
+    runtime.lastComposedTitle = title;
   }
 }
 
@@ -371,13 +376,12 @@ export default function ompOttyBridge(
     handler: async (_args, ctx) => {
       const activeRuntime = await getRuntime(ctx);
       const report = formatDiagnostics({
-        detectedOtty: activeRuntime.terminal.isOtty,
-        outputEnabled: activeRuntime.outputEnabled,
+        terminal: activeRuntime.terminal,
+        outputDecision: activeRuntime.outputDecision,
         settings: activeRuntime.settings,
         backendName: activeRuntime.backend.name,
         lastState: activeRuntime.lastState,
-        lastTitle: activeRuntime.lastTitle,
-        terminal: activeRuntime.terminal.diagnostics,
+        lastComposedTitle: activeRuntime.lastComposedTitle,
       });
 
       notify(ctx, report);

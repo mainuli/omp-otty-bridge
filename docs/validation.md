@@ -80,39 +80,86 @@ Observed behavior:
 - Title restored to the base title after OMP returned to idle
 - `/otty-status` reported expected settings and state
 
-This public-release polish does not change runtime files. Repeat the manual Otty smoke test when files under `src/`, `test/`, or `package.json#omp` change.
+Repeat the manual smoke tests after changes to files under `src/`, `test/`, or `package.json#omp`.
 
-To repeat the smoke test:
+### Direct Otty
 
-1. Install from GitHub:
+From the repository root in a direct Otty shell:
+
+1. Run:
 
    ```bash
-   omp install github:mainuli/omp-otty-bridge
+   omp --no-extensions --extension ./src/index.ts
    ```
 
-2. Restart OMP inside Otty.
-
-3. Run:
+2. Inside OMP, run `/otty-status` and confirm these exact lines:
 
    ```text
-   /otty-status
+   Otty detected: yes
+   Multiplexers: none
+   Output enabled: yes
+   Output reason: direct-otty
    ```
 
-4. Confirm:
+3. Send a prompt that triggers at least one tool call. Confirm the Otty title enters the active state and restores after OMP returns to idle.
 
-   - `Otty detected: yes`
-   - `Output enabled: yes`
-   - `Backend: ui-title`
+4. Run `/otty-status` again and confirm the state is idle.
 
-5. Send a prompt that triggers at least one tool call.
+### Default Multiplexer Suppression
 
-6. Confirm the Otty tab or window title changes to an active title.
+Run each available check from a direct Otty shell. Inside each multiplexer, start OMP with `omp --no-extensions --extension ./src/index.ts`, invoke `/otty-status`, and trigger a tool call.
 
-7. Wait for OMP to return to idle.
+1. Start tmux:
 
-8. Confirm the title restores to the base OMP title.
+   ```bash
+   tmux new-session -s omp-otty-bridge-smoke-$$
+   ```
 
-9. Run `/otty-status` again and confirm the state is idle.
+   Expected status lines:
+
+   ```text
+   Multiplexers: tmux
+   Output enabled: no
+   Output reason: multiplexer-disabled
+   ```
+
+   The outer Otty title must not change. Exit OMP and tmux normally.
+
+2. Start GNU screen:
+
+   ```bash
+   screen -S omp-otty-bridge-smoke-$$
+   ```
+
+   Expected status lines:
+
+   ```text
+   Multiplexers: screen
+   Output enabled: no
+   Output reason: multiplexer-disabled
+   ```
+
+   The outer Otty title must not change. Exit OMP and screen normally.
+
+3. In a Herdr pane, expect:
+
+   ```text
+   Multiplexers: herdr
+   Output enabled: no
+   Output reason: delegated-to-herdr
+   ```
+
+   The bridge must not change the terminal title. Herdr owns lifecycle display through its native integration; if it is absent, install it with `herdr integration install omp` rather than enabling bridge output.
+
+4. If `command -v zellij` succeeds, repeat the suppression check in Zellij and expect:
+
+   ```text
+   Multiplexers: zellij
+   Output enabled: no
+   Output reason: multiplexer-disabled
+   ```
+
+   If Zellij is unavailable, skip this manual check; do not install it solely for validation.
 
 ## Release Maintainer Checklist
 
@@ -122,5 +169,5 @@ To repeat the smoke test:
 - [ ] GitHub install dry run after merge to `main`
 - [ ] Manual Otty smoke test when runtime behavior changes
 - [ ] GitHub Actions CI passes on the release PR
-- [ ] Repository metadata is current: description `OMP extension that shows live OMP state in Otty tab titles.`, homepage `https://github.com/mainuli/omp-otty-bridge#readme`, topics `omp`, `omp-sh`, `otty`, `terminal`, `extension`
+- [ ] Repository metadata is current: description `OMP extension that shows live OMP state in direct Otty tab titles.`, homepage `https://github.com/mainuli/omp-otty-bridge#readme`, topics `omp`, `omp-sh`, `otty`, `terminal`, `extension`
 - [ ] `LICENSE` matches `package.json#license`

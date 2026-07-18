@@ -20,6 +20,12 @@ type Command = {
   handler: (args: string, ctx: TestCtx) => void | Promise<void>;
 };
 
+const MULTIPLEXER_CASES = [
+  { name: "tmux", env: { TMUX: "/tmp/tmux" } },
+  { name: "zellij", env: { ZELLIJ: "zellij-session" } },
+  { name: "screen", env: { STY: "screen-session" } },
+] as const;
+
 function makePi() {
   const handlers = new Map<string, Handler[]>();
   const commands = new Map<string, Command>();
@@ -128,6 +134,101 @@ describe("ompOttyBridge", () => {
       "agent_start",
       { type: "agent_start" },
       makeCtx({ ui: { setTitle: (title) => titles.push(title) } }),
+    );
+
+    expect(titles).toEqual([]);
+  });
+
+  for (const { name, env } of MULTIPLEXER_CASES) {
+    test(`suppresses inherited Otty output inside ${name} by default`, async () => {
+      const fake = makePi();
+      const titles: string[] = [];
+      extension(fake.pi as never, {
+        env: { TERM_PROGRAM: "otty", ...env },
+        settings: {},
+      });
+
+      await emit(
+        fake.handlers,
+        "tool_execution_start",
+        { type: "tool_execution_start", toolCallId: "1", toolName: "bash" },
+        makeCtx({ ui: { setTitle: (title) => titles.push(title) } }),
+      );
+
+      expect(titles).toEqual([]);
+    });
+
+    test(`emits best-effort inherited Otty output inside ${name} when opted in`, async () => {
+      const fake = makePi();
+      const titles: string[] = [];
+      extension(fake.pi as never, {
+        env: { TERM_PROGRAM: "otty", ...env },
+        settings: { multiplexerBehavior: "enabled" },
+      });
+
+      await emit(
+        fake.handlers,
+        "tool_execution_start",
+        { type: "tool_execution_start", toolCallId: "1", toolName: "bash" },
+        makeCtx({ ui: { setTitle: (title) => titles.push(title) } }),
+      );
+
+      expect(titles).toEqual(["▶ pi: project · bash"]);
+    });
+  }
+
+  test("always delegates Herdr even when every output opt-in is enabled", async () => {
+    const fake = makePi();
+    const titles: string[] = [];
+    extension(fake.pi as never, {
+      env: {
+        TERM_PROGRAM: "otty",
+        HERDR_ENV: "1",
+        TMUX: "/tmp/tmux",
+        ZELLIJ: "zellij-session",
+        STY: "screen-session",
+      },
+      settings: {
+        multiplexerBehavior: "enabled",
+        nonOttyBehavior: "enabled",
+      },
+    });
+
+    await emit(
+      fake.handlers,
+      "tool_execution_start",
+      { type: "tool_execution_start", toolCallId: "1", toolName: "bash" },
+      makeCtx({ ui: { setTitle: (title) => titles.push(title) } }),
+    );
+
+    expect(titles).toEqual([]);
+  });
+
+  test("keeps a shared title sink empty across two default-suppressed tmux bridges", async () => {
+    const bridgeA = makePi();
+    const bridgeB = makePi();
+    const titles: string[] = [];
+    const ctx = makeCtx({ ui: { setTitle: (title) => titles.push(title) } });
+    const overrides = {
+      env: { TERM_PROGRAM: "otty", TMUX: "/tmp/tmux" },
+      settings: {},
+    };
+
+    extension(bridgeA.pi as never, overrides);
+    extension(bridgeB.pi as never, overrides);
+
+    await emit(bridgeA.handlers, "agent_start", { type: "agent_start" }, ctx);
+    await emit(
+      bridgeB.handlers,
+      "tool_execution_start",
+      { type: "tool_execution_start", toolCallId: "1", toolName: "bash" },
+      ctx,
+    );
+    await emit(
+      bridgeA.handlers,
+      "session_shutdown",
+      { type: "session_shutdown" },
+      ctx,
     );
 
     expect(titles).toEqual([]);
@@ -390,7 +491,7 @@ describe("ompOttyBridge", () => {
     expect(titles).toEqual(["▶ pi: project · bash"]);
   });
 
-  test("/otty-status command notifies a report containing backend and output state", async () => {
+  test("/otty-status reports direct-Otty topology and output decision", async () => {
     const fake = makePi();
     const notifications: string[] = [];
     extension(fake.pi as never, { env: { TERM_PROGRAM: "otty" }, settings: {} });
@@ -402,7 +503,41 @@ describe("ompOttyBridge", () => {
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0]).toContain("Backend: ui-title");
+    expect(notifications[0]).toContain("Multiplexers: none");
     expect(notifications[0]).toContain("Output enabled: yes");
+    expect(notifications[0]).toContain("Output reason: direct-otty");
+  });
+
+  test("/otty-status reports suppressed topology and composed state", async () => {
+    const fake = makePi();
+    const notifications: string[] = [];
+    const titles: string[] = [];
+    extension(fake.pi as never, {
+      env: { TERM_PROGRAM: "otty", TMUX: "/tmp/tmux" },
+      settings: {},
+    });
+    const ctx = makeCtx({
+      ui: {
+        setTitle: (title) => titles.push(title),
+        notify: (message) => notifications.push(message),
+      },
+    });
+
+    await emit(
+      fake.handlers,
+      "tool_execution_start",
+      { type: "tool_execution_start", toolCallId: "1", toolName: "bash" },
+      ctx,
+    );
+    await fake.commands.get("otty-status")?.handler("", ctx);
+
+    expect(titles).toEqual([]);
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]).toContain("Multiplexers: tmux");
+    expect(notifications[0]).toContain("Output enabled: no");
+    expect(notifications[0]).toContain("Output reason: multiplexer-disabled");
+    expect(notifications[0]).toContain("State: tool (bash)");
+    expect(notifications[0]).toContain("Last composed title: ▶ pi: project · bash");
   });
 
   test("handler logs warning instead of throwing on bad ctx/backend errors", async () => {
